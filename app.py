@@ -8,6 +8,7 @@ import babel
 from flask import Flask, render_template, request, Response, flash, redirect, url_for
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 import logging
 from logging import Formatter, FileHandler
 from flask_wtf import Form
@@ -20,15 +21,17 @@ app = Flask(__name__)
 moment = Moment(app)
 app.config.from_object('config')
 db = SQLAlchemy(app)
+migrate = Migrate(app,db)
 
 # TODO: connect to a local postgresql database
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://m@localhost:5432/fyyur'
 
 #----------------------------------------------------------------------------#
 # Models.
 #----------------------------------------------------------------------------#
 
 class Venue(db.Model):
-    __tablename__ = 'Venue'
+    __tablename__ = 'venue'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -38,11 +41,24 @@ class Venue(db.Model):
     phone = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
+    genres = db.Column(db.String())
+    website = db.Column(db.String())
+    seeking_talent = db.Column(db.String())
+    seeking_description = db.Column(db.String())
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
-
+   # "image_link": "https://images.unsplash.com/photo-1543900694-133f37abaaa5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60",
+    #"past_shows": [{
+     # "artist_id": 4,
+      #"artist_name": "Guns N Petals",
+      #"artist_image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
+      #"start_time": "2019-05-21T21:30:00.000Z"
+    #}],
+    #"upcoming_shows": [],
+    #"past_shows_count": 1,
+    #"upcoming_shows_count": 0,
 class Artist(db.Model):
-    __tablename__ = 'Artist'
+    __tablename__ = 'artist'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -52,10 +68,33 @@ class Artist(db.Model):
     genres = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
+    website = db.Column(db.String())
+    seeking_venue = db.Column(db.String())
+    seeking_desription = db.Column(db.String())
+    past_shows_count = db.Column(db.Integer())
+    upcoming_shows_count = db.Column(db.Integer())
+
+     #   "past_shows": [{
+     # "venue_id": 1,
+      #"venue_name": "The Musical Hop",
+      #"venue_image_link": "https://images.unsplash.com/photo-1543900694-133f37abaaa5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60",
+      #"start_time": "2019-05-21T21:30:00.000Z"
+    #}],
+    #"upcoming_shows": [],
+    #"past_shows_count": 1,
+    #"upcoming_shows_count": 0,
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 # TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
+class Shows(db.Model):
+  __tablename__ = 'show'
+  id = db.Column(db.Integer, primary_key=True)
+  start_time = db.Column(db.DateTime)
+  venue_id = db.Column(db.Integer, db.ForeignKey(Venue.id), nullable=False)
+  venue_name = db.relationship('Venue', backref=db.backref('shows'))
+  artist_id = db.Column(db.Integer,db.ForeignKey('artist.id'),nullable=False)
+  artist = db.relationship('Artist', backref=db.backref('shows'))
 
 #----------------------------------------------------------------------------#
 # Filters.
@@ -85,29 +124,18 @@ def index():
 
 @app.route('/venues')
 def venues():
+  data=[]
+  cities = db.session.query(Venue.city,Venue.state).distinct(Venue.city,Venue.state)
+  for city in cities:
+    venues_in_city = db.session.query(Venue.id, Venue.name).filter(Venue.city == city[0]).filter(Venue.state == city[1])
+    data.append({
+         "city": city[0],
+         "state": city[1],
+         "venues": venues_in_city
+       })
   # TODO: replace with real venues data.
   #       num_shows should be aggregated based on number of upcoming shows per venue.
-  data=[{
-    "city": "San Francisco",
-    "state": "CA",
-    "venues": [{
-      "id": 1,
-      "name": "The Musical Hop",
-      "num_upcoming_shows": 0,
-    }, {
-      "id": 3,
-      "name": "Park Square Live Music & Coffee",
-      "num_upcoming_shows": 1,
-    }]
-  }, {
-    "city": "New York",
-    "state": "NY",
-    "venues": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
-  }]
+
   return render_template('pages/venues.html', areas=data);
 
 @app.route('/venues/search', methods=['POST'])
@@ -141,16 +169,6 @@ def show_venue(venue_id):
     "facebook_link": "https://www.facebook.com/TheMusicalHop",
     "seeking_talent": True,
     "seeking_description": "We are on the lookout for a local artist to play every two weeks. Please call us.",
-    "image_link": "https://images.unsplash.com/photo-1543900694-133f37abaaa5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60",
-    "past_shows": [{
-      "artist_id": 4,
-      "artist_name": "Guns N Petals",
-      "artist_image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
-      "start_time": "2019-05-21T21:30:00.000Z"
-    }],
-    "upcoming_shows": [],
-    "past_shows_count": 1,
-    "upcoming_shows_count": 0,
   }
   data2={
     "id": 2,
@@ -286,15 +304,7 @@ def show_artist(artist_id):
     "seeking_venue": True,
     "seeking_description": "Looking for shows to perform at in the San Francisco Bay Area!",
     "image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
-    "past_shows": [{
-      "venue_id": 1,
-      "venue_name": "The Musical Hop",
-      "venue_image_link": "https://images.unsplash.com/photo-1543900694-133f37abaaa5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60",
-      "start_time": "2019-05-21T21:30:00.000Z"
-    }],
-    "upcoming_shows": [],
-    "past_shows_count": 1,
-    "upcoming_shows_count": 0,
+
   }
   data2={
     "id": 5,

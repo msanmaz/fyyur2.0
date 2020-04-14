@@ -36,6 +36,27 @@
           <label for="genres">Facebook Link</label>
           {{ form.facebook_link(class_ = 'form-control', placeholder='http://', id=form.state, autofocus = true) }}
         </div>
+
+
+
+
+        <div class="form-group">
+          <label for="images_link">Image Link</label>
+          {{ form.image_link(class_ = 'form-control', placeholder='http://', id=form.state, autofocus = true) }}
+        </div>
+        <div class="form-group">
+          <label for="website">Website</label>
+          {{ form.website(class_ = 'form-control', placeholder='http://', id=form.state, autofocus = true) }}
+        </div>
+        <div class="form-group">
+          <label for="seeking_talent">Seeking Talent</label>
+          <small>Are you Looking for a new talent?</small>
+          {{ form.facebook_link(class_ = 'form-control', placeholder='http://', id=form.state, autofocus = true) }}
+        </div>
+        <div class="form-group">
+          <label for="seeking_description">Specific detailss</label>
+          {{ form.seeking_description(class_ = 'form-control', placeholder='We gonna do something', id=form.state, autofocus = true) }}
+        </div>
       <input type="submit" value="Create Venue" class="btn btn-primary btn-lg btn-block">
     </form>
   </div>
