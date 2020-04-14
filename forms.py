@@ -130,7 +130,7 @@ class VenueForm(Form):
     )
 
     seeking_description = TextAreaField(
-        'seeking_description'
+        'seeking_description', validators=[URL()]
     )
 
 class ArtistForm(Form):
@@ -229,7 +229,7 @@ class ArtistForm(Form):
         ]
     )
     facebook_link = StringField(
-        # TODO implement enum restriction
+       
         'facebook_link', validators=[URL()]
     )
 
@@ -242,7 +242,7 @@ class ArtistForm(Form):
     )
     seeking_venue = SelectField(
         'seeking_venue',
-        choices[
+        choices = [
             ('Yes','Yes'),
             ('No','No')
         ]
